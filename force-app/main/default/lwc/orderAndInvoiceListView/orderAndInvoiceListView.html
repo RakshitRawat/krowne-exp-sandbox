@@ -1,0 +1,127 @@
+<template>
+    <div class="main">
+        <div class="slds-grid slds-p-around_small slds-grid_align-spread slds-border_bottom" style={responsiveClass}>
+            <div class="slds-grid slds-align_absolute-center" style="margin: 0; align-items: start;">
+                <lightning-icon icon-name={selectViewForImage} size="medium" class="slds-m-right_small"
+                    style="margin-top: 10px;">
+                </lightning-icon>
+                <div class="combo-label">
+                    <h2 class="slds-text-heading_small slds-m-right_medium" style="font-size: 13px;">
+                        Orders & Invoices
+                    </h2>
+                    <lightning-combobox name="listView" label="View" variant="label-hidden" value={selectedView}
+                        options={viewOptions} onchange={handleViewChange} class="custom-combo">
+                    </lightning-combobox>
+                </div>
+            </div>
+            <div class="slds-grid" style={responsivePanel}>
+
+                <div style="display:flex;">
+                    <lightning-input type="search" placeholder="Search this list..." variant="label-hidden"
+                        value={searchKey} onchange={handleSearchChange} class="slds-m-right_small">
+                    </lightning-input>
+                    <div class="slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
+                        <lightning-button-icon icon-name="utility:filterList" alternative-text="Filter" title="Filter"
+                            data-id="filterButton" onclick={toggleFilterMenu} style="padding-right:10px;">
+                        </lightning-button-icon>
+                        <template if:true={showFilterMenu}>
+                            <div class="slds-dropdown slds-dropdown_left slds-dropdown_small"
+                                style="position: absolute; z-index: 100;" onmouseenter={handleDropdownMouseEnter}
+                                onmouseleave={handleDropdownMouseLeave}>
+                                <ul class="slds-dropdown__list" role="menu">
+                                    <template for:each={filters} for:item="filter" for:index="index">
+                                        <li class="slds-dropdown__item" role="presentation" key={filter.id} id={index}>
+                                            <a href="#" role="menuitem" onclick={handleFilter} data-id={filter.id}
+                                                class={filter.className}>
+                                                {filter.label}
+                                            </a>
+                                        </li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div if:false={isSmallScreen} style="--sds-c-icon-color-foreground-default: #FFD600 ;">
+            <template if:true={isLoading}>
+                <div class="slds-is-relative" style="min-height: 200px;width: 100%;">
+                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                </div>
+            </template>
+            <div if:false={isLoading} style="height: 70vh;">
+                <lightning-datatable key-field="Id" data={filteredRecords} columns={columns} 
+                    enable-infinite-loading onloadmore={loadMoreData} show-row-number-column
+                    hide-checkbox-column="false" selected-rows={selectedRows} onrowselection={handleRowSelection}
+                    onsort={handleSort} sorted-by={sortedBy} sorted-direction={sortDirection} class="tableClass">
+                </lightning-datatable>
+            </div>
+        </div>
+
+        <div if:true={isSmallScreen}>
+            <div class="slds-p-around_medium">
+                <div class="slds-grid slds-wrap slds-gutters" style="gap: 15px;">
+                    <template if:true={isLoading}>
+                        <div class="slds-is-relative" style="min-height: 200px;width: 100%;">
+                            <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                        </div>
+                    </template>
+                    <template for:each={filteredRecords} for:item="record" if:false={isLoading}>
+                        <div key={record.Id}
+                            class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-large-size_1-of-3">
+                            <lightning-card if:true={orderSelected} class="custom-card" data-name="Order">
+                                <h3 slot="title">
+                                    <a href="javascript:void(0);" onclick={navigateToRecord} data-id={record.Id}>
+                                        {record.Name}
+                                    </a>
+                                </h3>
+                                <div class="slds-p-horizontal_small slds-text-body_regular">
+                                    <template if:true={record.AccountName}>
+                                        <p><strong>Account:</strong> {record.AccountName}</p>
+                                    </template>
+                                    <template if:true={record.Name}>
+                                        <p><strong>Status:</strong> {record.Status}</p>
+                                    </template>
+                                    <!-- <template if:true={record.CreatedDate}>
+                                        <p><strong>PO Number:</strong> {record.PoNumber}</p>
+                                    </template> -->
+                                    <template if:true={record.EffectiveDate}>
+                                        <p><strong>Project :</strong> {record.Project}</p>
+                                    </template>
+                                    <template if:true={record.OwnerName}>
+                                        <p><strong>Ship Date :</strong> {record.ShipDate}</p>
+                                    </template>
+                                </div>
+                            </lightning-card>
+                            <lightning-card if:false={orderSelected} class="custom-card">
+                                <h3 slot="title">
+                                    <a href="javascript:void(0);" onclick={navigateToRecord} data-id={record.Id}
+                                        data-name="Invoice">
+                                        {record.Name}
+                                    </a>
+                                </h3>
+                                <div class="slds-p-horizontal_small slds-text-body_regular">
+                                    <template if:true={record.AccountName}>
+                                        <p><strong>Account:</strong> {record.AccountName}</p>
+                                    </template>
+                                    <template if:true={record.OrderName}>
+                                        <p><strong>Order Name :</strong> {record.OrderName}</p>
+                                    </template>
+                                    <template if:true={record.PONumber}>
+                                        <p><strong>PO Number :</strong> {record.PONumber}</p>
+                                    </template>
+                                    <!-- <template if:true={record.CreatedDate}>
+                                        <p><strong>Created Date :</strong> {record.CreatedDate}</p>
+                                    </template> -->
+                                </div>
+                            </lightning-card>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

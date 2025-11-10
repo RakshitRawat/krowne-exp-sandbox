@@ -1,0 +1,85 @@
+.custom-container {
+	color: black;
+}
+
+.custom-combo {
+	--lwc-borderWidthThin: 0px;
+	--lwc-spacingSmall: 0px !important;
+	font-size: 17px;
+	font-weight: bolder;
+	--slds-c-input-color-background: transparent;
+}
+.custom-combo:hover{
+	border-bottom: 2px solid black;
+}
+
+.icon-custom {
+	--lwc-squareIconLargeBoundary: 33px;
+}
+
+.main {
+	min-height: 80vh;
+}
+.custom-card{
+	--lwc-borderWidthThin: 0px 0px 1px 0px;
+    --lwc-borderRadiusMedium: 0px;
+}
+
+
+.custom-button{
+	--lwc-buttonBorderRadius: 20px;
+}
+
+.button-container {
+    display: flex;
+    gap: 20px;
+    justify-content: flex-start;
+    align-items: center;
+    margin: auto;
+}
+
+.icon-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.custom-button {
+    --slds-c-button-color-background: #000;
+    --slds-c-button-color-border: #000;
+    --slds-c-button-radius-border: 50%;
+    --slds-c-button-sizing-border: 2px;
+    --slds-c-button-color-foreground: #fff;
+    height: 40px;
+    width: 40px;
+    padding: 0;
+    border-radius: 50%;
+}
+
+.button-label {
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: #333;
+    text-align: center;
+}
+.tableClass lightning-icon.slds-m-right_x-small.slds-icon-utility-warning.slds-icon_container{
+    --sds-c-icon-color-foreground-default: yellow;
+}
+.menu-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.menu-link.selected {
+    background-color: #1B96FF;
+    color: white;
+    border-radius: 4px;
+    padding: 4px 8px;
+}
+.custom-filter{
+    --lwc-borderWidthThin: 0px;
+    --lwc-colorTextIconDefault: white !important;
+     --slds-c-button-color-background: #1B96FF !important;
+     --slds-c-button-color-background-hover: #1B96FF !important;
+     --slds-c-button-text-color-hover: white !important;
+}

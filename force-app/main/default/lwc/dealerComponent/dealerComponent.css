@@ -1,0 +1,33 @@
+.custom-status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Green background for Won */
+.status-won {
+  background-color: #2e844a;
+}
+
+/* Red background for Lost */
+.status-lost {
+  background-color: #bb0606;
+}
+
+/* Gray background for Open with darker text */
+.status-open {
+  background-color: #d3d3d3;
+  color: #333;
+}
+
+.status-icon {
+  margin-right: 0.25rem;
+  fill: white;
+}

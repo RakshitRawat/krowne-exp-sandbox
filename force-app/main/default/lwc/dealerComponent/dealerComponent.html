@@ -1,0 +1,150 @@
+<template>
+  <!-- Main Dealers Card -->
+  <lightning-card title="">
+    <div class=""
+      style=" padding: 10px 5px !important;box-shadow: 0px 0px 5px 0px lightgray !important;border-radius: 10px;">
+      <span style=" font-size: 15px;font-weight: bold;margin: 0px 5px;">Related Dealers</span>
+      <div>
+
+        <div class="slds-grid slds-grid_align-end slds-gutters">
+          <template if:true={showActionButtons}>
+            <div class="slds-col">
+              <lightning-button variant="success" label="Mark Won" onclick={handleGreen}></lightning-button>
+            </div>
+            <div class="slds-col">
+              <lightning-button variant="destructive" label="Mark Lost" onclick={handleRed}></lightning-button>
+            </div>
+          </template>
+
+          <template if:true={checkLost}>
+            <section class="slds-modal slds-fade-in-open">
+              <div class="slds-modal__container">
+
+                <!-- Header -->
+                <header class="slds-modal__header">
+                  <h2 class="slds-text-heading_medium">Confirmation</h2>
+                </header>
+
+                <!-- Body -->
+                <div class="slds-modal__content slds-p-around_medium">
+                  <p>Do you really want to proceed?</p>
+                </div>
+
+                <!-- Footer -->
+                <footer class="slds-modal__footer">
+                  <lightning-button variant="neutral" label="Cancel" onclick={handleCloseModal}></lightning-button>
+                  <lightning-button variant="brand" label="Yes, Proceed" onclick={handleConfirm}></lightning-button>
+                </footer>
+              </div>
+            </section>
+
+            <!-- Backdrop -->
+            <div class="slds-backdrop slds-backdrop_open"></div>
+          </template>
+        </div>
+        <div style="margin: 15px 0px;">
+          <div class="slds-scrollable_x">
+            <table class="slds-table slds-table_cell-buffer slds-table_bordered custom-table"
+              style="border: 1px solid lightgray;">
+              <thead>
+                <tr class="slds-line-height_reset">
+                  <template if:true={showCheckbox}>
+                  <th scope="col"> <input type="checkbox" onchange={handleSelectAll} /> </th>
+                  </template>
+                  <th scope="col">Dealer Name</th>
+                  <th scope="col">Rep Group Code</th>
+                  <th scope="col">AQ Link</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template for:each={bidders} for:item="dealer">
+                  <tr key={dealer.id}>
+                    <template if:true={showCheckbox}>
+                    <td>
+                      <input type="checkbox" disabled={dealer.disabled} data-id={dealer.id} checked={dealer.selected}
+                        onchange={handleCheckbox} />
+                    </td>
+                    </template>
+                    <td>{dealer.Dealer__c}</td>
+                    <td>{dealer.Rep_Group_Code__c}</td>
+                    <td> <a href={dealer.AQ_Link__c} target="_blank" rel="noopener noreferrer">
+                     {dealer.AQ_Link_Display__c}
+                    </a>
+                    </td>
+                    <td>
+                      <span class={dealer.fullStatusClass}>
+                        <!-- <template if:true={dealer.isWon}>
+                        <lightning-icon icon-name="utility:check" size="xx-small" class="status-icon"></lightning-icon>
+                      </template> -->
+                        {dealer.Status__c}
+                      </span>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- </lightning-card> -->
+      <!-- </lightning-card> Add New Dealer Card -->
+      <template if:true={showTable}>
+        <template if:true={allLost}>
+
+          <div class="slds-m-vertical_medium">
+            <hr />
+          </div>
+          <div>
+            <span style=" font-size: 15px;font-weight: bold;margin: 0px 5px;">Add New Dealer</span>
+            <div style="margin-top:15px;">
+              <template for:each={newRows} for:item="row" for:index="index">
+                <lightning-record-edit-form key={row.key} object-api-name="Bidder__c" onsuccess={handleNewRecordSuccess}
+                  onerror={handleNewRecordError} class="slds-m-top_medium">
+                  <div class="slds-grid slds-gutters slds-wrap slds-align-bottom">
+                    <div class="slds-col slds-size_3-of-12">
+                      <lightning-input-field field-name="Dealer__c" data-field="Dealer__c" value={row.Dealer__c}
+                        required onchange={handleInputChange} data-index={index} variant="label-stacked">
+                      </lightning-input-field>
+                    </div>
+                    <div class="slds-col slds-size_3-of-12">
+                      <lightning-input-field field-name="Rep_Group_Code__c" data-field="Rep_Group_Code__c"
+                        value={row.Rep_Group_Code__c} required onchange={handleInputChange} data-index={index} variant="label-stacked">
+                      </lightning-input-field>
+                    </div>
+                    <div class="slds-col slds-size_3-of-12">
+                      <lightning-input-field field-name="AQ_Link__c" data-field="AQ_Link__c" type="url"
+                        value={row.AQ_Link__c} onchange={handleInputChange} data-index={index} variant="label-stacked" field-level-help="Type or paste a URL here.">
+                      </lightning-input-field>
+                    </div>
+
+
+                    <div class="slds-col slds-size_3-of-12 " style="margin-top: 20px;">
+                      <lightning-button-icon icon-name="utility:close" alternative-text="Remove row" variant="bare"
+                        size="small" onclick={removeNewRow} data-index={index}> </lightning-button-icon>
+                    </div>
+                  </div>
+
+
+                </lightning-record-edit-form>
+              </template>
+              <div class="slds-p-horizontal_small slds-p-bottom_small slds-grid slds-grid_align-end slds-gutters"
+                style="display: flex;justify-content: flex-start;margin-top: 15px;">
+                <div class="slds-col">
+                  <lightning-button variant="brand" label="Add Row" onclick={addRow}></lightning-button>
+                </div>
+                <div class="slds-col">
+                  <lightning-button variant="brand" label="Save All" onclick={saveAll}></lightning-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </template>
+    </div>
+
+  </lightning-card>
+
+</template>

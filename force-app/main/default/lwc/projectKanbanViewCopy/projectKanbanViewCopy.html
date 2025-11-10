@@ -1,0 +1,93 @@
+<template>
+    <!-- Top header -->
+    <div class="kanban-header-bar">
+        <h1>Projects</h1>
+        <div class="header-controls">
+            <input type="text" placeholder="Search projects..." oninput={handleSearch} />
+            <div class="slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
+                <lightning-button-icon icon-name="utility:filterList" alternative-text="Filter" title="Filter"
+                    data-id="filterButton" onclick={toggleFilterMenu} style="padding-right:10px;">
+                </lightning-button-icon>
+                <template if:true={showFilterMenu}>
+                    <div class="slds-dropdown slds-dropdown_left slds-dropdown_small"
+                        style="position: absolute; z-index: 100;" onmouseenter={handleDropdownMouseEnter}
+                        onmouseleave={handleDropdownMouseLeave}>
+                        <ul class="slds-dropdown__list" role="menu">
+                            <template for:each={filters} for:item="filter" for:index="index">
+                                <li class="slds-dropdown__item" role="presentation" key={filter.id} id={index}>
+                                    <a href="#" role="menuitem" onclick={handleFilter} data-id={filter.id}
+                                        class={filter.className}>
+                                        {filter.label}
+                                    </a>
+                                </li>
+                            </template>
+                        </ul>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+
+    <!-- Path Header -->
+    <div class="header-con">
+        <div class="path-container">
+            <template for:each={boardData} for:item="col">
+                <div key={col.status} class="path-step">
+                    {col.status}
+                </div>
+            </template>
+        </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        <template for:each={boardData} for:item="col">
+            <div key={col.status} class="kanban-column">
+                <!-- scrollable container -->
+                <div class="kanban-items" data-status={col.status} onscroll={handleScroll}>
+
+                    <template if:true={isSkeletonLoading}>
+                        <template for:each={skeletonCards} for:item="s">
+                            <div key={s} class="kanban-card skeleton">
+                                <div class="skeleton-line title"></div>
+                                <div class="skeleton-line short"></div>
+                                <div class="skeleton-line"></div>
+                                <div class="skeleton-line short"></div>
+                            </div>
+                        </template>
+                    </template>
+
+                    <!-- tasks -->
+                    <template if:false={isSkeletonLoading}>
+                        <template for:each={col.tasks} for:item="task">
+                            <div key={task.id} class="kanban-card" data-id={task.id} onclick={handleBidderClick}>
+                                <p class="task-title">{task.projectName}</p>
+                                <p class="task-field">Quoted Total: {task.quotedTotal}</p>
+
+                                <template if:false={task.hasMultipleBidders}>
+                                    <p class="task-field">Account: {task.accountName}</p>
+                                </template>
+                                <template if:true={task.hasMultipleBidders}>
+                                    <p class="task-field">
+                                        Bidder:
+                                        <a href="javascript:void(0);" data-id={task.id} onclick={handleBidderClick}>
+                                            Multiple Bidders
+                                        </a>
+                                    </p>
+                                </template>
+
+                                <p class="task-field">Last Modified: {task.lastModified}</p>
+                            </div>
+                        </template>
+                    </template>
+
+                    <!-- loader -->
+
+                    <template if:false={col.hasMore}>
+                        <p class="no-more"></p>
+                    </template>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>
