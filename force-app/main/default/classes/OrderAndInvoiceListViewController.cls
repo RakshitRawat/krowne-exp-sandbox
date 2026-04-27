@@ -40,8 +40,8 @@ public with sharing class OrderAndInvoiceListViewController {
             /* 📅 Day Range Filter */
             if (dayRange != null && dayRange > 0 && orderFilterName != 'No Ship Date Orders') {
                 Date filterDate = Date.today().addDays(-dayRange);
-                query += ' AND (Projected_Ship_Date__c = NULL ' +
-                        'OR Projected_Ship_Date__c = 1900-01-01 ' +
+                query += ' AND (Projected_Ship_Date__c != NULL ' +
+                        'OR Projected_Ship_Date__c != 1900-01-01 ' +
                          'OR (Projected_Ship_Date__c >= :filterDate ' +
                          'AND Projected_Ship_Date__c <= TODAY))';
                         }
