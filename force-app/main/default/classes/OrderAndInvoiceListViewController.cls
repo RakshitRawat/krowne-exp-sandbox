@@ -29,7 +29,7 @@ public with sharing class OrderAndInvoiceListViewController {
                 query += ' AND (Account.Name LIKE :searchPattern ' +
                          'OR Order_Document_Number__c LIKE :searchPattern'+
                          'OR PoNumber LIKE :searchPattern ' +
-                         'OR Project_Name__c LIKE :searchPattern)';
+                         'OR Mark_4_Project__c LIKE :searchPattern)';
             }
 
             /* ⏸ On Hold Filter */
