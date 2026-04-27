@@ -27,7 +27,9 @@ public with sharing class OrderAndInvoiceListViewController {
             /* 🔍 Search */
             if (String.isNotBlank(searchKey)) {
                 query += ' AND (Account.Name LIKE :searchPattern ' +
-                         'OR Order_Document_Number__c LIKE :searchPattern)';
+                         'OR Order_Document_Number__c LIKE :searchPattern'+
+                         'OR PoNumber LIKE :searchPattern ' +
+                         'OR Project_Name__c LIKE :searchPattern)';
             }
 
             /* ⏸ On Hold Filter */
