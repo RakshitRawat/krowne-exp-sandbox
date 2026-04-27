@@ -47,6 +47,7 @@ public with sharing class OrderAndInvoiceListViewController {
                 //         }
                 query += ' AND Projected_Ship_Date__c > 1900-01-01';
                 query += ' AND Projected_Ship_Date__c >= :filterDate';
+                // query += ' AND Projected_Ship_Date__c <= TODAY';
             }
 
             /* 📦 Order Status Filter */
@@ -57,7 +58,7 @@ public with sharing class OrderAndInvoiceListViewController {
                 //     query += ' AND Tracking_Status__c != \'Shipped\'';
                 // }
                 if (orderFilterName == 'No Ship Date Orders') {
-                    query += ' AND Projected_Ship_Date__c = 1900-01-01';
+                    query += ' AND (Projected_Ship_Date__c = 1900-01-01 OR Projected_Ship_Date__c = NULL)';
                 }
                 else if (orderFilterName == 'Shipped Orders') {
                     query += ' AND Tracking_Status__c = \'Shipped\'';
