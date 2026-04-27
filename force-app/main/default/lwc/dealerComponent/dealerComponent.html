@@ -49,11 +49,12 @@
               <thead>
                 <tr class="slds-line-height_reset">
                   <template if:true={showCheckbox}>
-                  <th scope="col"> <input type="checkbox" onchange={handleSelectAll} /> </th>
+                    <th scope="col"> <input type="checkbox" onchange={handleSelectAll} /> </th>
                   </template>
                   <th scope="col">Dealer Name</th>
                   <th scope="col">Rep Group Code</th>
                   <th scope="col">AQ Link</th>
+                  <th scope="col">Additional AQ Link</th>
                   <th scope="col">Status</th>
                 </tr>
               </thead>
@@ -61,16 +62,20 @@
                 <template for:each={bidders} for:item="dealer">
                   <tr key={dealer.id}>
                     <template if:true={showCheckbox}>
-                    <td>
-                      <input type="checkbox" disabled={dealer.disabled} data-id={dealer.id} checked={dealer.selected}
-                        onchange={handleCheckbox} />
-                    </td>
+                      <td>
+                        <input type="checkbox" disabled={dealer.disabled} data-id={dealer.id} checked={dealer.selected}
+                          onchange={handleCheckbox} />
+                      </td>
                     </template>
                     <td>{dealer.Dealer__c}</td>
                     <td>{dealer.Rep_Group_Code__c}</td>
                     <td> <a href={dealer.AQ_Link__c} target="_blank" rel="noopener noreferrer">
-                     {dealer.AQ_Link_Display__c}
-                    </a>
+                        {dealer.AQ_Link_Display__c}
+                      </a>
+                    </td>
+                    <td> <a href={dealer.AQ_Link2__c} target="_blank" rel="noopener noreferrer">
+                        {dealer.AQ_Link_Display2__c}
+                      </a>
                     </td>
                     <td>
                       <span class={dealer.fullStatusClass}>
@@ -111,17 +116,27 @@
                     </div>
                     <div class="slds-col slds-size_3-of-12">
                       <lightning-input-field field-name="Rep_Group_Code__c" data-field="Rep_Group_Code__c"
-                        value={row.Rep_Group_Code__c} required onchange={handleInputChange} data-index={index} variant="label-stacked">
+                        value={row.Rep_Group_Code__c} required onchange={handleInputChange} data-index={index}
+                        variant="label-stacked">
                       </lightning-input-field>
                     </div>
-                    <div class="slds-col slds-size_3-of-12">
+
+                    <div class="slds-col slds-size_2-of-12">
                       <lightning-input-field field-name="AQ_Link__c" data-field="AQ_Link__c" type="url"
-                        value={row.AQ_Link__c} onchange={handleInputChange} data-index={index} variant="label-stacked" field-level-help="Type or paste a URL here.">
+                        value={row.AQ_Link__c} onchange={handleInputChange} data-index={index} variant="label-stacked"
+                        field-level-help="Type or paste a URL here.">
+                      </lightning-input-field>
+                    </div>
+
+                    <div class="slds-col slds-size_2-of-12">
+                      <lightning-input-field field-name="AQ_Link2__c" data-field="AQ_Link2__c" type="url"
+                        value={row.AQ_Link2__c} onchange={handleInputChange} data-index={index} variant="label-stacked"
+                        field-level-help="Type or paste a URL here.">
                       </lightning-input-field>
                     </div>
 
 
-                    <div class="slds-col slds-size_3-of-12 " style="margin-top: 20px;">
+                    <div class="slds-col slds-size_1-of-12 " style="margin-top: 20px;">
                       <lightning-button-icon icon-name="utility:close" alternative-text="Remove row" variant="bare"
                         size="small" onclick={removeNewRow} data-index={index}> </lightning-button-icon>
                     </div>

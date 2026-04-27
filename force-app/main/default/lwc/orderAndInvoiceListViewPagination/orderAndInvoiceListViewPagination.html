@@ -22,7 +22,7 @@
                         <lightning-input type="search" placeholder="Search this list..." variant="label-hidden"
                             value={searchKey} onchange={handleSearchChange} class="slds-m-right_small">
                         </lightning-input>
-                        <div class="slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open">
+                        <div class="slds-dropdown-trigger slds-dropdown-trigger_click slds-is-open filter-wrapper">
                             <lightning-button-icon icon-name="utility:filterList" alternative-text="Filter"
                                 title="Filter" data-id="filterButton" onclick={toggleFilterMenu}
                                 style="padding-right:10px;">
@@ -70,11 +70,20 @@
 
             <!-- start from here -->
             <div if:false={isLoading}>
-                <lightning-datatable key-field="Id" data={filteredRecords} columns={columns} 
-                    onloadmore={loadMoreData} show-row-number-column hide-checkbox-column="false"
-                    selected-rows={selectedRows} onrowselection={handleRowSelection} onsort={handleSort}
-                    sorted-by={sortedBy} sorted-direction={sortDirection} class="tableClass">
+                <lightning-datatable
+                    key-field="Id"
+                    data={pagedRecords}
+                    columns={columns}
+                    show-row-number-column
+                    hide-checkbox-column="false"
+                    selected-rows={selectedRows}
+                    onrowselection={handleRowSelection}
+                    onsort={handleSort}
+                    sorted-by={sortedBy}
+                    sorted-direction={sortDirection}
+                    class="tableClass">
                 </lightning-datatable>
+
                 <div class="slds-m-top_medium slds-align_absolute-center">
                     <!-- First -->
                     <lightning-button
@@ -91,15 +100,27 @@
                     </lightning-button>
 
                     <!-- Page Numbers -->
+                    <!-- Page Numbers -->
                     <template for:each={pageButtons} for:item="page">
-                        <lightning-button
-                            key={page}
-                            label={page}
-                            variant='brand'
-                            onclick={handlePageClick}
-                            data-page={page}>
-                        </lightning-button>
+                        <span key={page.id} class="page-item">
+                            <template if:false={page.isEllipsis}>
+                                <lightning-button
+                                    label={page.label}
+                                    data-page={page.value}
+                                    variant={page.variant}
+                                    onclick={handlePageClick}>
+                                </lightning-button>
+                            </template>
+
+                            <template if:true={page.isEllipsis}>
+                                <span class="ellipsis">…</span>
+                            </template>
+                        </span>
                     </template>
+
+
+
+
 
                     <lightning-button
                         label=">"

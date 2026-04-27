@@ -83,3 +83,38 @@
      --slds-c-button-color-background-hover: #1B96FF !important;
      --slds-c-button-text-color-hover: white !important;
 }
+
+/* Main pagination row */
+.pagination-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.pagination-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+/* THIS fixes the combobox */
+.page-select {
+    display: inline-flex;
+    width: auto;
+}
+
+/* Force combobox NOT to stretch */
+.page-select lightning-combobox {
+    width: 90px;
+    min-width: 90px;
+}
+
+.page-item {
+    margin: 0 4px;
+}
+
+.ellipsis {
+    padding: 0 6px;
+    font-weight: 600;
+}

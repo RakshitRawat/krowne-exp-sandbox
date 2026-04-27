@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Report xmlns="http://soap.sforce.com/2006/04/metadata">
+
+    <chart>
+        <backgroundColor1>#FFFFFF</backgroundColor1>
+        <backgroundColor2>#FFFFFF</backgroundColor2>
+        <backgroundFadeDir>Diagonal</backgroundFadeDir>
+
+        <chartSummaries>
+            <axisBinding>y</axisBinding>
+            <column>RowCount</column>
+        </chartSummaries>
+
+        <chartType>Pie</chartType>
+        <enableHoverLabels>true</enableHoverLabels>
+        <expandOthers>true</expandOthers>
+
+        <groupingColumn>Project__c.Bidders__r$Status__c</groupingColumn>
+
+        <location>CHART_BOTTOM</location>
+        <showPercentage>true</showPercentage>
+        <showValues>true</showValues>
+        <size>Medium</size>
+        <summaryAxisRange>Auto</summaryAxisRange>
+        <textColor>#000000</textColor>
+        <textSize>12</textSize>
+        <titleColor>#000000</titleColor>
+        <titleSize>18</titleSize>
+    </chart>
+
+    <filter>
+        <criteriaItems>
+            <column>Project__c$CreatedDate</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>false</isUnlocked>
+            <operator>greaterOrEqual</operator>
+            <value>LAST_N_MONTHS:12</value>
+        </criteriaItems>
+
+        <criteriaItems>
+            <column>Project__c.Bidders__r$Status__c</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>false</isUnlocked>
+            <operator>notEqual</operator>
+            <value>Open</value>
+        </criteriaItems>
+
+        <criteriaItems>
+            <column>Project__c.Bidders__r$Sales_Rep__c.Logged_in_user_is_rep__c</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>false</isUnlocked>
+            <operator>equals</operator>
+            <value>1</value>
+        </criteriaItems>
+    </filter>
+
+    <format>Summary</format>
+
+    <groupingsDown>
+        <field>Project__c.Bidders__r$Status__c</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+
+    <name>Sales Rep Win Loss Rolling 12</name>
+    <reportType>Project_with_Bidder__c</reportType>
+    <scope>organization</scope>
+    <showDetails>false</showDetails>
+    <showGrandTotal>true</showGrandTotal>
+    <showSubTotals>true</showSubTotals>
+
+</Report>

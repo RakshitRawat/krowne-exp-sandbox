@@ -96,6 +96,7 @@
 .kanban-card {
   background: #fff;
   padding: 16px;
+  margin-top: 16px;
   margin-bottom: 16px;
   border-radius: 8px;
   box-shadow: 0 3px 8px rgba(200, 200, 200, 0.6);
@@ -141,7 +142,7 @@
   background: #000;   /* black background */
   color: #fff;
   font-weight: bold;
-  font-size: 14px;
+  font-size: 20px;
   text-align: center;
   padding: 12px 0;
   position: relative;

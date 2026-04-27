@@ -1,87 +1,136 @@
 public with sharing class OrderAndInvoiceListViewController {
     
     @AuraEnabled
-    public static List<Map<String, String>> getOrders(String searchKey, Boolean fetchOnHoldOrders, Integer dayRange) {
-    List<Map<String, String>> orders = new List<Map<String, String>>();
-    System.debug('dayRange param: ' + dayRange);
-    String searchPattern = '%' + (searchKey != null ? searchKey : '') + '%';
+    public static List<Map<String, String>> getOrders(
+        String searchKey,
+        Boolean fetchOnHoldOrders,
+        Integer dayRange,
+        Integer limitSize,
+        String orderFilterName,
+        Date lastShipDate,
+        Id lastRecordId
+    ) {
+        try {
+            System.debug('limitSize --->'+ limitSize);
+            System.debug('lastRecordId--->'+ lastRecordId);
+            List<Map<String, String>> orders = new List<Map<String, String>>();
+            String searchPattern = '%' + (searchKey != null ? searchKey : '') + '%';
 
-    String query = 'SELECT Id, PoNumber, Project_Name__c, OrderNumber, Account.Name, EffectiveDate, EndDate, ' +
-                   'Owner.Name, CreatedDate, Status, LastModifiedDate, Order_Document_Number__c, Order_On_Hold__c, Krowne_Ship_Date__c ' +
-                   'FROM Order WHERE (Account.Name LIKE :searchPattern OR Order_Document_Number__c LIKE :searchPattern)';
+            String query =
+                'SELECT Id, PoNumber, Project_Name__c, OrderNumber, Account.Name, ' +
+                'EffectiveDate, EndDate, Mark_4_Project__c, GP_Amount__c, Tracking_Status__c, ' +
+                'Owner.Name, CreatedDate, Status, LastModifiedDate, ' +
+                'Order_Document_Number__c, Order_On_Hold__c, ' +
+                'Krowne_Ship_Date__c, Projected_Ship_Date__c ' +
+                'FROM Order WHERE Void__c != \'1\'';
 
-    if (fetchOnHoldOrders) {
-        query += ' AND Order_On_Hold__c != null';
-    }
+            /* 🔍 Search */
+            if (String.isNotBlank(searchKey)) {
+                query += ' AND (Account.Name LIKE :searchPattern ' +
+                         'OR Order_Document_Number__c LIKE :searchPattern)';
+            }
 
-    if (dayRange != null && dayRange > 0) {
-    DateTime filterDateTime = DateTime.newInstance(Date.today().addDays(-dayRange), Time.newInstance(0, 0, 0, 0));
-    System.debug(filterDateTime);
-    query += ' AND CreatedDate >= :filterDateTime';
-    }
+            /* ⏸ On Hold Filter */
+            if (fetchOnHoldOrders) {
+                query += ' AND Order_On_Hold__c != null';
+            }
 
+            /* 📅 Day Range Filter */
+            if (dayRange != null && dayRange > 0) {
+                Date filterDate = Date.today().addDays(-dayRange);
+                query += ' AND (Projected_Ship_Date__c = NULL ' +
+                        'OR Projected_Ship_Date__c = 1900-01-01 ' +
+                         'OR (Projected_Ship_Date__c >= :filterDate ' +
+                         'AND Projected_Ship_Date__c <= TODAY))';
+                        }
 
-    query += ' ORDER BY CreatedDate DESC LIMIT 500';
-    System.debug('Query ==> '+query);
+            /* 📦 Order Status Filter */
+            if (orderFilterName != null) {
+                if (orderFilterName == 'Shipped Orders') {
+                    query += ' AND Tracking_Status__c = \'Shipped\'';
+                } else if (orderFilterName == 'Open Orders') {
+                    query += ' AND Tracking_Status__c != \'Shipped\'';
+                }
+            }
 
-    List<Order> orderList = Database.query(query);
+            /* 🔑 Stable ordering (MANDATORY for client pagination) */
+            query += ' ORDER BY Projected_Ship_Date__c ASC, Id ASC';
 
-    for (Order ord : orderList) {
-        Map<String, String> orderMap = new Map<String, String>{
-            'Id'              => ord.Id,
-            'Name'            => ord.Order_Document_Number__c,
-            'AccountName'     => ord.Account != null ? ord.Account.Name : '',
-            'AccountId'       => ord.AccountId,
-            'EffectiveDate'   => String.valueOf(ord.EffectiveDate),
-            'EndDate'         => String.valueOf(ord.EndDate),
-            'OwnerName'       => ord.Owner != null ? ord.Owner.Name : '',
-            'CreatedDate'     => String.valueOf(ord.CreatedDate),
-            'LastModifiedDate'=> String.valueOf(ord.LastModifiedDate),
-            'Type'            => 'Order',
-            'Status'          => ord.Status,
-            'PoNumber'        => ord.PoNumber,
-            'Project'         => ord.Project_Name__c,
-            'ShipDate'      => String.valueOf(ord.Krowne_Ship_Date__c)
-        };
-        if (fetchOnHoldOrders) {
-            orderMap.put('onhold', ord.Order_On_Hold__c);
+            /* 🛑 Hard safety cap for client-side pagination */
+            query += ' LIMIT 10000';
+
+            List<Order> orderList = Database.query(query);
+
+            for (Order ord : orderList) {
+                Map<String, String> orderMap = new Map<String, String>{
+                    'Id'               => ord.Id,
+                    'Name'             => ord.Order_Document_Number__c,
+                    'AccountName'      => ord.Account != null ? ord.Account.Name : '',
+                    'AccountId'        => ord.AccountId,
+                    'EffectiveDate'    => String.valueOf(ord.EffectiveDate),
+                    'EndDate'          => String.valueOf(ord.EndDate),
+                    'OwnerName'        => ord.Owner != null ? ord.Owner.Name : '',
+                    'CreatedDate'      => String.valueOf(ord.CreatedDate),
+                    'LastModifiedDate' => String.valueOf(ord.LastModifiedDate),
+                    'ShipDate'         => ord.Projected_Ship_Date__c != null
+                                          ? String.valueOf(ord.Projected_Ship_Date__c)
+                                          : '1900-01-01',
+                    'Type'             => 'Order',
+                    'Status'           => ord.Tracking_Status__c,
+                    'PoNumber'         => ord.PoNumber,
+                    'Project'          => ord.Mark_4_Project__c,
+                    'GPAmount'         => String.valueOf(ord.GP_Amount__c)
+                };
+
+                if (fetchOnHoldOrders) {
+                    orderMap.put('onhold', String.valueOf(ord.Order_On_Hold__c));
+                }
+
+                orders.add(orderMap);
+            }
+
+            return orders;
+
+        } catch (Exception e) {
+            throw new AuraHandledException('Apex Error: ' + e.getMessage());
         }
-        orders.add(orderMap);
     }
-    system.debug('Orders==>'+orders.size());
-    return orders;
-    }
+
 
 
     @AuraEnabled
-    public static List<Map<String, String>> getInvoices(String searchKey, Integer dayRange) {
+    public static List<Map<String, String>> getInvoices(String searchKey, Integer dayRange, Integer limitSize, Integer offset) {
         List<Map<String, String>> invoices = new List<Map<String, String>>();
 
-        // Prepare wildcard pattern — blank key matches all
         String searchPattern = '%' + (searchKey != null ? searchKey : '') + '%';
 
-        
+        String query = 'SELECT Id, ' +
+        'Invoice_Document_Number__c, ' +
+        'Account_Name__c, ' +
+        'Customer_PO_Number__c, ' +
+        'Order__c, ' +
+        'Order__r.Order_Document_Number__c, ' +
+        'Order__r.AccountId, ' +
+        'CreatedDate ' +
+        'FROM Invoice__c ';
 
-            String query = 'SELECT Id, ' +
-               'Invoice_Document_Number__c, ' +
-               'Account_Name__c, ' +
-               'Customer_PO_Number__c, ' +
-               'Order__c, ' +
-               'Order__r.Order_Document_Number__c, ' +
-               'Order__r.AccountId, ' +
-               'CreatedDate ' +
-               'FROM Invoice__c ' +
-               'WHERE (Account_Name__c LIKE :searchPattern ' +
-               'OR Order__r.Order_Document_Number__c LIKE :searchPattern ' +
-               'OR Invoice_Document_Number__c LIKE :searchPattern) ';
+            if (String.isNotBlank(searchKey)) {
+                system.debug('searchkey is present===>'+ searchkey);
+                offset = 0;
+                query += ' WHERE (Account_Name__c LIKE :searchPattern ' +
+                        'OR Order__r.Order_Document_Number__c LIKE :searchPattern ' +
+                        'OR Invoice_Document_Number__c LIKE :searchPattern) ';
+            } else {
+                query += ' WHERE Id != null '; // dummy filter to start WHERE clause
+        }
 
-            if (dayRange != null && dayRange > 0) {
-            DateTime filterDateTime = DateTime.newInstance(Date.today().addDays(-dayRange), Time.newInstance(0, 0, 0, 0));
-            System.debug(filterDateTime);
-            query += ' AND CreatedDate >= :filterDateTime';
-            }
+if (dayRange != null && dayRange > 0) {
+    DateTime filterDateTime = DateTime.newInstance(Date.today().addDays(-dayRange), Time.newInstance(0, 0, 0, 0));
+    query += ' AND CreatedDate >= :filterDateTime';
+}
 
-            query += ' LIMIT 500';
+query += ' ORDER BY CreatedDate DESC LIMIT :limitSize OFFSET :offset';
+
 
             List<Invoice__c> InvoiceList = Database.query(query);
 
@@ -114,6 +163,9 @@ public with sharing class OrderAndInvoiceListViewController {
                 'PONumber'      => inv.Customer_PO_Number__c
             });
         }
+        system.debug('Invoices==>'+invoiceList);
+
+        system.debug('Invoices==>'+invoices.size());
 
         return invoices;
     }

@@ -1,0 +1,41 @@
+.custom-container{
+	color : black;
+}
+
+.pagination-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* <-- KEY: space between groups */
+}
+
+.page-item {
+    display: inline-flex;
+}
+
+.page-item lightning-button {
+    margin: 0 2px; /* <-- KEY: space between buttons */
+}
+
+/* Anchor dropdown to filter icon */
+.filter-wrapper {
+    position: relative;
+}
+
+/* Dropdown positioning */
+.filter-wrapper .slds-dropdown {
+    position: absolute;
+    top: 100%;
+    right: -100px;     /* 👈 moves dropdown slightly RIGHT */
+    left: auto;
+    min-width: 180px;
+    z-index: 1000;
+}
+
+/* On smaller screens, keep it inside viewport
+@media (max-width: 900px) {
+    .filter-wrapper .slds-dropdown {
+        right: 0;
+        left: auto;
+    }
+} */

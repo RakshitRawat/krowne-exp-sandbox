@@ -13,8 +13,15 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
     @track filteredRecords = [];
     @track selectedRows = [];
     @track columns = [];
-    @track rowSize = 50;
-    @track rowOffset = 0;
+    // @track rowSize = 50;
+    // @track rowOffset = 0;
+
+    lastRecordId = null;
+    lastShipDate = null;
+
+    // store cursor per page (for page jump)
+    pageCursorMap = {};
+
 
 
     sortedBy;
@@ -30,9 +37,9 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
     hasMoreData = true;
 
     // Strat from here ------
-    @track pagedRecords = [];
+    @track pagedRecords =[];
     totalRecords=0;
-    pageSize = 10;
+    pageSize = 30;
     maxPageButtons =5;
     currentPage = 1;
 
@@ -44,30 +51,99 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
         return this.currentPage === 1;
     }
 
+
     get isLastPage() {
-        return this.currentPage === this.totalPages;
+    // When NOT searching → always allow Next
+    if (!this.searchKey || this.searchKey.trim() === '') {
+        return false;
+    }
+    return this.currentPage === this.totalPages;
     }
 
     get pageButtons() {
-        let pages = [];
-        let start = Math.max(
-            1,
-            this.currentPage - Math.floor(this.maxPageButtons / 2)
-        );
+    const pages = [];
+    const total = this.totalPages;
+    const current = this.currentPage;
+    const maxVisible = 5;
 
-        let end = start + this.maxPageButtons - 1;
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, current + 2);
 
-        if (end > this.totalPages) {
-            end = this.totalPages;
-            start = Math.max(1, end - this.maxPageButtons + 1);
-        }
-
-        for (let i = start; i <= end; i++) {
-            pages.push(i);
-        }
-
-        return pages;
+    if (start === 1) {
+        end = Math.min(total, maxVisible);
     }
+
+    if (end === total) {
+        start = Math.max(1, total - maxVisible + 1);
+    }
+
+    // First page
+    if (start > 1) {
+        pages.push({
+            id: 'page-1',
+            label: '1',
+            value: 1,
+            variant: current === 1 ? 'brand' : 'neutral',
+            isEllipsis: false
+        });
+
+        if (start > 2) {
+            pages.push({
+                id: 'ellipsis-start',
+                isEllipsis: true
+            });
+        }
+    }
+
+    // Middle pages
+    for (let i = start; i <= end; i++) {
+        pages.push({
+            id: `page-${i}`,
+            label: i.toString(),
+            value: i,
+            variant: i === current ? 'brand' : 'neutral',
+            isEllipsis: false
+        });
+    }
+
+    // Last page
+    if (end < total) {
+    pages.push({
+        label: '…',
+        isEllipsis: true
+    });
+
+    pages.push({
+        id: `page-${total}`,
+        label: total.toString(),
+        value: total,
+        variant: current === total ? 'brand' : 'neutral',
+        isEllipsis: false
+    });
+    }
+
+    return pages;
+}
+
+
+
+
+    get pageOptions() {
+    let options = [];
+    for (let i = 1; i <= this.totalPages; i++) {
+        options.push({
+            label: `Page ${i}`,
+            value: i
+        });
+    }
+    return options;
+    }
+
+    handlePageDropdown(event) {
+    this.currentPage = Number(event.detail.value);
+    this.updatePagedRecords();
+    }
+
 
     updatePagedRecords() {
         const start = (this.currentPage - 1) * this.pageSize;
@@ -134,34 +210,26 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
 
 
     handleFilter(event) {
-        this.rowOffset = 0;
-        let eventName = event.currentTarget.dataset.id;
-        let element = this.template.querySelector(`[data-id="${eventName}"]`);
-        let icon = this.template.querySelector(`[data-id="filterButton"]`);
-        if (element) {
-            element.style.backgroundColor = 'blue';
-            element.style.color = 'white'; // Optional: for contrast
-        }
-        if (eventName.includes('-')) {
-            icon.classList.add('custom-filter');
-            this.selectedFilter = eventName;
-            this.dayRange = eventName.split('-')[0];
-            this.showFilterMenu = false;
-            this.isHoveringDropdown = false;
-            this.clearFilterMenu = true;
-            this.loadData();
+    const eventName = event.currentTarget.dataset.id;
 
-        }
-        else {
-            icon.classList.remove('custom-filter');
-            this.selectedFilter = '';
-            this.dayRange = null;
-            this.showFilterMenu = false;
-            this.isHoveringDropdown = false;  // <-- Add this
-            this.loadData();
-        }
+    // Reset pagination
+    this.pageCursorMap = {};
+    this.currentPage = 1;
 
+    if (eventName === 'clear') {
+        // ✅ Default back to Last 12 Months
+        this.selectedFilter = '365-days';
+        this.dayRange = '365';
+        this.searchKey = '';
+    } else {
+        this.selectedFilter = eventName;
+        this.dayRange = eventName.split('-')[0];
     }
+
+    this.loadData(1);
+    }
+
+
 
 
     orderSelected = true;
@@ -311,7 +379,13 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
         this.setResponsiveStyles();
         this._handleClickOutside = this.handleClickOutside.bind(this);
         document.addEventListener('mousedown', this._handleClickOutside);
-        this.loadData(); // only load if no filter was applied
+       // this.loadData(); // only load if no filter was applied
+        this.selectedFilter = '365-days';
+        this.dayRange = 365;
+        this.currentPage = 1;
+        this.pageCursorMap = {};
+
+        this.loadData(1);
     }
 
     disconnectedCallback() {
@@ -336,37 +410,86 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
     }
 
 
-    async loadData(isLoadMore = false) {
-        //this.isLoading = true;
-        this.setColumns();
-        await getOrders({
-            searchKey: this.searchKey, fetchOnHoldOrders: this.fetchOnHoldOrders, dayRange: this.dayRange, limitSize: this.rowSize, offset: this.rowOffset,
-            orderFilterName: this.selectedView
-        })
-            .then((result) => {
+    async loadData(page = 1) {
+    this.isLoading = true;
+    this.setColumns();
 
-                if (isLoadMore) {
-                    // Append for load more
-                    this.allOrders = [...this.allOrders, ...result];
-                } else {
-                    this.allOrders = result;
-                }
+    const isSearchActive = this.searchKey && this.searchKey.trim() !== '';
 
-                if (result.length < this.rowSize && this.searchKey != '') {
-                    this.hasMoreData = false;
-                } else {
-                    this.hasMoreData = true;
-                }
-                this.applyFilters();
-            })
-            .catch((error) => {
-                console.error('Error while loading orders:', error);
-            })
+    // Cursor only used in NON-search mode
+    const cursor = !isSearchActive
+        ? this.pageCursorMap[page - 1] || {}
+        : {};
 
-            .finally(() => {
-                this.isLoading = false;
-            });
+    console.log('cursor---->',cursor);
+    try {
+        console.log('PageSize--->'+ this.pageSize);
+        const result = await getOrders({
+            searchKey: this.searchKey,
+            fetchOnHoldOrders: this.fetchOnHoldOrders,
+            dayRange: this.dayRange,
+            limitSize: this.pageSize,
+            orderFilterName: this.selectedView,
+            lastShipDate: !isSearchActive ? cursor.lastShipDate || null : null,
+            lastRecordId: !isSearchActive ? cursor.lastRecordId || null : null
+        });
+
+        this.allOrders = result;
+
+        // Save cursor ONLY when not searching
+        if (!isSearchActive && result.length > 0) {
+            const last = result[result.length - 1];
+            this.pageCursorMap[page] = {
+                lastShipDate: last.ShipDate ? new Date(last.ShipDate) : null,
+                lastRecordId: last.Id
+            };
+
+        }
+
+        this.currentPage = page;
+        this.applyFilters();
+
+    } catch (error) {
+        console.error('Error loading orders:', error);
+    } finally {
+        this.isLoading = false;
     }
+}
+
+
+    handlePageClick(event) {
+    this.currentPage = Number(event.target.dataset.page);
+    this.updatePagedRecords();
+    }
+
+
+    goToFirst() {
+    this.currentPage = 1;
+    this.updatePagedRecords();
+    }
+
+    goToPrevious() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            this.updatePagedRecords();
+        }
+    }
+
+    goToNext() {
+        if (this.currentPage < this.totalPages) {
+            this.currentPage++;
+            this.updatePagedRecords();
+        }
+    }
+
+    goToLast() {
+        this.currentPage = this.totalPages;
+        this.updatePagedRecords();
+    }
+
+
+
+
 
 
     loadMoreData(event) {
@@ -404,20 +527,12 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
     }
 
     handleViewChange(event) {
-        this.rowOffset = 0;
-        this.isLoading = true;
-        this.selectedView = event.detail.value;
-
-        if (this.selectedView === 'On Hold Orders') {
-            this.fetchOnHoldOrders = true;
-        }
-        else {
-            this.fetchOnHoldOrders = false;
-        }
-        console.log('selectedView--->', this.selectedView);
-        this.loadData();
-        this.setColumns();
+    this.selectedView = event.detail.value;
+    this.fetchOnHoldOrders = false;
+    this.pageCursorMap = {};
+    this.loadData(1);
     }
+
 
     navigateToRecord(event) {
         let objectName = event.currentTarget.dataset.name == 'Order' ? 'Order' : 'Invoice__c';
@@ -438,13 +553,16 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
 
 
     handleSearchChange(event) {
-        this.searchKey = event.target.value.toLowerCase();
-        this.rowOffset = 0;
-        clearTimeout(this.debounceTimeout);
-        this.debounceTimeout = setTimeout(() => {
-            this.loadData();
-        }, 300);
+    this.searchKey = event.target.value.toLowerCase();
+
+    // Reset pagination state
+    this.pageCursorMap = {};
+    this.currentPage = 1;
+
+    this.loadData(1);
     }
+
+
 
 
     handleRowSelection(event) {
@@ -493,52 +611,38 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
     }*/
 
     applyFilters() {
-        console.log('applyFilters ==>');
+    let records = [...this.allOrders];
 
-        // 1️⃣ Start from full dataset
-        let records = [...this.allOrders];
+    const isSearchActive = this.searchKey && this.searchKey.trim() !== '';
 
-        // 2️⃣ Apply search filter (safe for nulls)
-        if (this.searchKey && this.searchKey.trim() !== '') {
-            const searchText = this.searchKey.toLowerCase();
-
-            records = records.filter(row => {
-                return Object.values(row).some(value => {
-                    if (value === null || value === undefined) return false;
-                    return value.toString().toLowerCase().includes(searchText);
-                });
-            });
-        }
-
-        // 3️⃣ Map records for datatable
-        const mappedRecords = records.map((item, index) => {
-            let base = {
-                ...item,
-                RowNumber: index + 1,
-                Link: '/' + item.Id,
-                AccountLink: item.AccountId ? '/' + item.AccountId : null,
-                OrderLink: item.OrderId ? '/' + item.OrderId : null
-            };
-            return base;
-        });
-
-        // 4️⃣ Update filtered list
-        this.filteredRecords = mappedRecords;
-
-        // 5️⃣ Pagination values
-        this.totalRecords = mappedRecords.length;
-        this.currentPage = 1;
-
-        // 6️⃣ Dynamic page button calculation
-        if (this.totalPages <= 5) {
-            this.maxPageButtons = this.totalPages;
-        } else {
-            this.maxPageButtons = 5;
-        }
-
-        // 7️⃣ Slice data for current page
-        this.updatePagedRecords();
+    if (isSearchActive) {
+        const searchText = this.searchKey.toLowerCase();
+        records = records.filter(row =>
+            Object.values(row).some(value =>
+                value && value.toString().toLowerCase().includes(searchText)
+            )
+        );
     }
+
+    this.filteredRecords = records.map((item, index) => ({
+        ...item,
+        RowNumber: index + 1,
+        Link: '/' + item.Id,
+        AccountLink: item.AccountId ? '/' + item.AccountId : null,
+        OrderLink: item.OrderId ? '/' + item.OrderId : null
+    }));
+
+    /* ✅ FIX: lastRecordId must come from client data */
+    this.lastRecordId =
+        this.filteredRecords.length > 0
+            ? this.filteredRecords[this.filteredRecords.length - 1].Id
+            : null;
+
+    this.totalRecords = this.filteredRecords.length;
+    this.updatePagedRecords();
+    }
+
+
 
 
 

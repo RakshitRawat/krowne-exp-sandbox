@@ -5,7 +5,11 @@ import getProjectsNew from '@salesforce/apex/ProjectController.getProjectsNew';
 import { NavigationMixin } from 'lightning/navigation';
 
 export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElement) {
-    statuses = ["Quoted", "Ordered", "Shipped"];
+    statuses = [
+    { key: "Quoted", label: "Quoted" },
+    { key: "Ordered", label: "In Production" },
+    { key: "Shipped", label: "Shipped" }
+    ];
     allTasks = {};             // all tasks grouped by status
     @track visibleTasks = {};  // tasks currently displayed
     batchSize = 20;            // lazy load batch size
@@ -15,10 +19,11 @@ export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElem
     @track isLoading = {};     // per-column loading state
     lastRecordIdMap = {};      // track last record Id per column
     @track hasMore = {}; // ✅ NEW: Track if there are more records
-    dayRange = 90;
+    dayRange = 365;
     @track searchTerm = '';
     @track isSkeletonLoading = true;
     skeletonCards = [1, 2, 3, 4, 5];       // default filter
+    @track countByStatus = {};
 
 
     connectedCallback() {
@@ -26,9 +31,9 @@ export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElem
         document.addEventListener('mousedown', this._handleClickOutside);
 
         // Initialize per-column loading states
-        this.statuses.forEach(status => {
-            this.isLoading[status] = false;
-            this.hasMore[status] = true;
+        this.statuses.forEach(item => {
+        this.isLoading[item.key] = false;
+        this.hasMore[item.key] = true;
         });
 
         // Load all statuses in one go
@@ -41,12 +46,21 @@ export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElem
         this.isSkeletonLoading = true; // Show skeleton
 
         // Collect promises from each status fetch
-        const fetchPromises = this.statuses.map(status => {
+        const fetchPromises = this.statuses.map(item => {
+            const status = item.key;
             const lastRecordId = lastRecordIdMap[status] || '';
             const statusValue = status === 'Quoted' ? 'Open' : 'Won';
             const isShipped = status === 'Shipped';
             // Return the promise from getProjectsNewMethod
-            return this.getProjectsNewMethod(status, statusValue, isShipped, this.dayRange || 90, lastRecordId);
+           return this.getProjectsNewMethod({
+                listType: status,
+                statusValue: statusValue,
+                daysFilter: this.dayRange || 365,
+                lastRecordId: lastRecordId,
+                limitSize: this.batchSize,
+                searchTerm: this.searchTerm
+            });
+
         });
 
         // Wait for all fetches to complete
@@ -63,72 +77,82 @@ export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElem
     }
 
     formatCurrency(amount) {
-    if (amount === null || amount === undefined) return '';
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD'
-    }).format(amount);
+        if (amount === null || amount === undefined) return '';
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount);
     }
 
-    getProjectsNewMethod(listType, status, isShipped, daysFilter, lastRecordId) {
-        // Return a resolved promise immediately if already loading
-        if (this.isLoading[listType]) return Promise.resolve();
+    getProjectsNewMethod(params) {
+        if (this.isLoading[params.listType]) return Promise.resolve();
 
-        this.isLoading[listType] = true;
+        this.isLoading[params.listType] = true;
 
-        // Return the Apex call promise
+        console.log('➡️ Calling getProjectsNew with params:', JSON.stringify(params));
+
         return getProjectsNew({
-            limitSize: this.batchSize,
-            lastRecordId: lastRecordId || '',
-            status: status,
-            daysFilter: daysFilter,
-            projectList: listType,
-            searchTerm: this.searchTerm
+            limitSize: params.limitSize,
+            lastRecordId: params.lastRecordId,
+            status: params.statusValue,
+            daysFilter: params.daysFilter,
+            projectList: params.listType,
+            searchTerm: params.searchTerm
         })
-            .then(result => {
-                console.log('getProjectsNew result--->', JSON.stringify(result));
+            .then(wrapper => {
+                const result = wrapper.projects || [];
+                const totalAmount = wrapper.totalProjectAmount || 0;
+                const totalCount = wrapper.totalProjectCount || 0;
 
-                if (!this.allTasks[listType]) {
-                    this.allTasks[listType] = [];
-                    this.visibleTasks[listType] = [];
+                // store total per column
+                if (!this.totalByStatus) this.totalByStatus = {};
+                 if (!this.countByStatus) this.countByStatus = {};
+
+                if (!params.lastRecordId && wrapper.totalProjectAmount !== undefined) {
+                    this.totalByStatus[params.listType] = totalAmount;
+                    this.countByStatus[params.listType] = totalCount;
+                }
+
+                // init arrays
+                if (!this.allTasks[params.listType]) {
+                    this.allTasks[params.listType] = [];
+                    this.visibleTasks[params.listType] = [];
                 }
 
                 const newTasks = result.map(p => ({
                     id: p.projectId,
                     projectName: p.projectName,
-                    quotedTotal:  this.formatCurrency(p.projectAmount),
+                    quotedTotal: this.formatCurrency(p.projectAmount),
                     accountName: p.accountName,
                     bidderStatus: p.bidderStatus,
                     bidderCount: p.bidderCount,
-                    hasMultipleBidders: p.hasMultipleBidders,
                     lastModified: this.formatDate(new Date(p.createdDate)),
-                    status: listType
+                    status: params.listType,
+                    dealerNames: p.dealerNames
                 }));
 
-                // Append to arrays
-                this.allTasks[listType] = [...this.allTasks[listType], ...newTasks];
-                const currentVisible = this.visibleTasks[listType] || [];
-                this.visibleTasks = {
-                    ...this.visibleTasks,
-                    [listType]: [...currentVisible, ...newTasks]
-                };
+                // append data
+                this.allTasks[params.listType] = [...this.allTasks[params.listType], ...newTasks];
+                this.visibleTasks[params.listType] = [...this.visibleTasks[params.listType], ...newTasks];
+                //this.countByStatus[params.listType] = this.allTasks[params.listType].length;
 
-                // Track last record Id for lazy loading
+                // pagination
                 if (newTasks.length > 0) {
-                    this.lastRecordIdMap[listType] = newTasks[newTasks.length - 1].id;
-                    this.hasMore[listType] = true;
+                    this.lastRecordIdMap[params.listType] = newTasks[newTasks.length - 1].id;
+                    this.hasMore[params.listType] = true;
                 } else {
-                    this.hasMore[listType] = false;
+                    this.hasMore[params.listType] = false;
                 }
 
-                this.isLoading[listType] = false;
+                this.isLoading[params.listType] = false;
             })
-            .catch(error => {
-                console.error(`Error fetching ${listType} (getProjectsNew):`, error);
-                this.isLoading[listType] = false;
-                this.hasMore[listType] = false;
+            .catch(err => {
+                console.error(err);
+                this.isLoading[params.listType] = false;
+                this.hasMore[params.listType] = false;
             });
     }
+
 
 
 
@@ -237,7 +261,7 @@ export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElem
                 const newTasks = result.map(p => ({
                     id: p.projectId,
                     projectName: p.projectName,
-                    quotedTotal:  this.formatCurrency(p.projectAmount),
+                    quotedTotal: this.formatCurrency(p.projectAmount),
                     accountName: p.accountName,
                     bidderStatus: p.bidderStatus,
                     bidderCount: p.bidderCount,
@@ -279,13 +303,17 @@ export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElem
     }
 
     get boardData() {
-        return this.statuses.map(status => ({
-            status,
-            tasks: this.visibleTasks[status] || [],
-            isLoading: this.isLoading[status] || false, // Ensure isLoading is available
-            hasMore: this.hasMore[status] || false // ✅ expose to template
-        }));
+    return this.statuses.map(item => ({
+        status: item.key,       // internal key (IMPORTANT)
+        label: item.label,      // UI label
+        tasks: this.visibleTasks[item.key] || [],
+        isLoading: this.isLoading[item.key] || false,
+        hasMore: this.hasMore[item.key] || false,
+        total: this.totalByStatus ? this.formatCurrency(this.totalByStatus[item.key] || 0) : '$0',
+        count: this.countByStatus?.[item.key] || 0
+    }));
     }
+
 
     searchDebounceTimer;
 
@@ -322,7 +350,7 @@ export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElem
                 actionName: 'view'
             }
         }).then(url => {
-            window.open(url, "_blank"); // Always opens in a new tab
+            window.open(url, "_self"); 
         });
     }
 
@@ -391,6 +419,7 @@ export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElem
         this.allTasks = {};
         this.visibleTasks = {};
         this.lastRecordIdMap = {};
+        this.countByStatus = {};
 
         this.fetchAllStatuses();
 
@@ -405,13 +434,14 @@ export default class ProjectKanbanViewCopy extends NavigationMixin(LightningElem
         // Check if user reached the bottom of this column
         if (scrollTop + clientHeight >= scrollHeight - 10 && !this.isLoading[status]) {
             const lastId = this.lastRecordIdMap[status] || '';
-            this.getProjectsNewMethod(
-                status,
-                status === 'Quoted' ? 'Open' : 'Won',
-                status === 'Shipped' ? true : false,
-                this.dayRange || 90,
-                lastId
-            );
+            this.getProjectsNewMethod({
+                listType: status,
+                statusValue: status === 'Quoted' ? 'Open' : 'Won',
+                daysFilter: this.dayRange || 365,
+                lastRecordId: lastId,
+                limitSize: this.batchSize,
+                searchTerm: this.searchTerm
+            });
         }
     }
 }

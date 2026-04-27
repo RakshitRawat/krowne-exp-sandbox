@@ -33,7 +33,8 @@
         <div class="path-container">
             <template for:each={boardData} for:item="col">
                 <div key={col.status} class="path-step">
-                    {col.status}
+                    <span style="color: #00A79D; margin-right: 8px;">({col.count})</span>
+                    {col.label} ({col.total})
                 </div>
             </template>
         </div>
@@ -64,17 +65,17 @@
                                 <p class="task-title">{task.projectName}</p>
                                 <p class="task-field">Quoted Total: {task.quotedTotal}</p>
 
-                                <template if:false={task.hasMultipleBidders}>
-                                    <p class="task-field">Account: {task.accountName}</p>
+                                <template for:each={task.dealerNames} for:item="dealer">
+                                    <p class="task-field" key={dealer}>Bidder - {dealer}</p>
                                 </template>
-                                <template if:true={task.hasMultipleBidders}>
+                                <!-- <template if:true={task.hasMultipleBidders}>
                                     <p class="task-field">
                                         Bidder:
                                         <a href="javascript:void(0);" data-id={task.id} onclick={handleBidderClick}>
                                             Multiple Bidders
                                         </a>
                                     </p>
-                                </template>
+                                </template> -->
 
                                 <p class="task-field">Last Modified: {task.lastModified}</p>
                             </div>
