@@ -38,7 +38,7 @@ public with sharing class ProjectController {
         Set<Id> projectIds = new Set<Id>();
         List<Project__c> projects = new List<Project__c>();
         Set<String> documentNumbersFromProject = new Set<String>();
-        Set<String> documentNumbersFromTracking = new Set<String>();
+        Set<String> documentNumbersFromInvoice = new Set<String>();
         Map<Id,String> projectIdToAccountId = new Map<Id,String>();
         for(Bidder__c b : bidders){
             if(b.Project__c != null){
@@ -49,14 +49,21 @@ public with sharing class ProjectController {
             }
             projectIdToAccountId.put(b.Project__c,b.Dealer__r.Name);
         }
-        List<Tracking_Number__c> trackingNumbers = new List<Tracking_Number__c>();
-        //Decimal projectTotal = 0;
+        List<Invoice__c> invoices = new List<Invoice__c>();
+
         if(projectList == 'Shipped' || projectList == 'Ordered'){
-            trackingNumbers = [SELECT Id,Order__r.Order_Document_Number__c FROM Tracking_Number__c WHERE Order__r.Order_Document_Number__c IN :documentNumbersFromProject AND Order__r.Void__c != '1'];
-            for(Tracking_Number__c trackNumber : trackingNumbers){
-                documentNumbersFromTracking.add(trackNumber.Order__r.Order_Document_Number__c);
+            invoices = [
+                SELECT Order__r.Order_Document_Number__c
+                FROM Invoice__c
+                WHERE Order__r.Order_Document_Number__c IN :documentNumbersFromProject
+            ];
+
+            for(Invoice__c inv : invoices){
+                if(String.isNotBlank(inv.Order__r.Order_Document_Number__c)){
+                    documentNumbersFromInvoice.add(inv.Order__r.Order_Document_Number__c);
+                }
             }
-            projects = getProjectData(projectIds,filterDate,lastRecordId,limitSize,documentNumbersFromTracking,projectList,searchTerm);
+            projects = getProjectData(projectIds,filterDate,lastRecordId,limitSize,documentNumbersFromInvoice,projectList,searchTerm);
             Map<Id, ProjectBidderInfo> projectIdToBidderInfo = getBidderInfo(projectIds,lastRecordId,'Won');
             System.debug('projectIdToBidderInfo ====>'+projectIdToBidderInfo);
             for(Project__c p : projects){
@@ -65,7 +72,7 @@ public with sharing class ProjectController {
             }
         }
         else{
-            projects = getProjectData(projectIds,filterDate,lastRecordId,limitSize,documentNumbersFromTracking,projectList,searchTerm);
+            projects = getProjectData(projectIds,filterDate,lastRecordId,limitSize,documentNumbersFromInvoice,projectList,searchTerm);
             Map<Id, ProjectBidderInfo> projectIdToBidderInfo = getBidderInfo(projectIds,lastRecordId,'');
             for(Project__c p : projects){
                 //projectTotal += (p.Project_Amount__c != null ?  p.Project_Amount__c : 0.0);
@@ -76,7 +83,7 @@ public with sharing class ProjectController {
         //wrapper.totalProjectAmount = projectTotal;
         wrapper.projects = projectWrapper;*/
         
-        ProjectWrapperDetails Total = getTotalCountAndAmount(projectIds,filterDate,documentNumbersFromTracking,projectList,searchTerm);
+        ProjectWrapperDetails Total = getTotalCountAndAmount(projectIds,filterDate,documentNumbersFromInvoice,projectList,searchTerm);
         ProjectWrapperDetails wrapper = new ProjectWrapperDetails();
         wrapper.totalProjectAmount = total.totalProjectAmount;
         wrapper.totalProjectCount = total.totalProjectCount;
@@ -84,7 +91,7 @@ public with sharing class ProjectController {
         return wrapper;
     }
     
-    public static ProjectWrapperDetails getTotalCountAndAmount(Set<Id> projectIds,Datetime filterDate,Set<String> documentNumbersFromTracking,String projectList,String searchTerm) {
+    public static ProjectWrapperDetails getTotalCountAndAmount(Set<Id> projectIds,Datetime filterDate,Set<String> documentNumbersFromInvoice,String projectList,String searchTerm) {
         ProjectWrapperDetails result = new ProjectWrapperDetails();
         result.totalProjectAmount = 0;
         result.totalProjectCount = 0;
@@ -103,15 +110,15 @@ public with sharing class ProjectController {
         }
         
         if (projectList == 'Shipped') {
-            if (documentNumbersFromTracking != null && !documentNumbersFromTracking.isEmpty()) {
-                query += ' AND Order_Number__c IN :documentNumbersFromTracking';
+            if (documentNumbersFromInvoice != null && !documentNumbersFromInvoice.isEmpty()) {
+                query += ' AND Order_Number__c IN :documentNumbersFromInvoice';
             } else {
                 return result;
             }
         } 
         else if (projectList == 'Ordered') {
-            if (documentNumbersFromTracking != null && !documentNumbersFromTracking.isEmpty()) {
-                query += ' AND Order_Number__c NOT IN :documentNumbersFromTracking';
+            if (documentNumbersFromInvoice != null && !documentNumbersFromInvoice.isEmpty()) {
+                query += ' AND Order_Number__c NOT IN :documentNumbersFromInvoice';
             }
         }
         
@@ -204,7 +211,7 @@ public with sharing class ProjectController {
         return wrap;
     }
     
-    public static List<Project__c> getProjectData(Set<Id> projectIds,Datetime filterDate,String lastRecordId,Integer limitSize,Set<String> documentNumbersFromTracking,String projectList,String searchTerm){
+    public static List<Project__c> getProjectData(Set<Id> projectIds,Datetime filterDate,String lastRecordId,Integer limitSize,Set<String> documentNumbersFromInvoice,String projectList,String searchTerm){
         String query = ''; 
         if(!projectIds.isEmpty()){
             query =	'SELECT Id, Name, Project_Amount__c,Order_Number__c, CreatedDate, Owner.Name '+
@@ -213,14 +220,14 @@ public with sharing class ProjectController {
                 query += ' AND CreatedDate >= :filterDate ';
             }
             if (projectList == 'Shipped') {
-                if (documentNumbersFromTracking != null && !documentNumbersFromTracking.isEmpty()) {
-                    query += ' AND Order_Number__c IN :documentNumbersFromTracking';
+                if (documentNumbersFromInvoice != null && !documentNumbersFromInvoice.isEmpty()) {
+                    query += ' AND Order_Number__c IN :documentNumbersFromInvoice';
                 } else {
                     return new List<Project__c>();
                 }
             } else if (projectList == 'Ordered') {
-                if (documentNumbersFromTracking != null && !documentNumbersFromTracking.isEmpty()) {
-                    query += ' AND Order_Number__c NOT IN :documentNumbersFromTracking';
+                if (documentNumbersFromInvoice != null && !documentNumbersFromInvoice.isEmpty()) {
+                    query += ' AND Order_Number__c NOT IN :documentNumbersFromInvoice';
                 }
             }
             
@@ -265,7 +272,7 @@ public with sharing class ProjectController {
         i++; 
         i++; 
         i++; 
-        i++; 
+        i++;  
         i++;
         i++;
         i++;
