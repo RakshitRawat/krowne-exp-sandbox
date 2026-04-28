@@ -53,9 +53,10 @@ public with sharing class ProjectController {
 
         if(projectList == 'Shipped' || projectList == 'Ordered'){
             invoices = [
-                SELECT Order__r.Order_Document_Number__c
+                SELECT Order__r.Order_Document_Number__c, Order__r.Void__c
                 FROM Invoice__c
                 WHERE Order__r.Order_Document_Number__c IN :documentNumbersFromProject
+                AND Order__r.Void__c != '1'
             ];
 
             for(Invoice__c inv : invoices){
