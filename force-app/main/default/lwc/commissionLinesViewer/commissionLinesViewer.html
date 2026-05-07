@@ -1,0 +1,60 @@
+<template>
+
+    <template if:false={accessGranted}>
+        <div class="password-screen">
+            <div class="password-box">
+                <h2 class="password-title">Enter 4-Digit Access Code</h2>
+
+                <div class="otp-container">
+                    <template for:each={otp} for:item="digit" for:index="index">
+                        <input
+                        key={otp}
+                        class="otp-input"
+                        type="text"
+                        maxlength="1"
+                        data-index={index}
+                        oninput={handleOtpInput}
+                        onkeydown={handleKeyDown}
+                    />
+                    </template>
+                </div>
+
+                <template if:true={wrongPassword}>
+                    <p class="error-text">Incorrect code. Try again.</p>
+                </template>
+            </div>
+        </div>
+    </template>
+
+    <template if:true={accessGranted}>
+        <div style="background: #d3d3d37a;background: rgba(211, 211, 211, 0.48);padding: 15px;border-radius: 10px;">
+            <div style="padding-top:10px padding-bottom:20px;">
+                <h1 style="text-align:center; font-size:20px;color:#005FF7;">
+                    <strong>Commissions - {currentYear}</strong>
+                </h1>
+            </div>
+            <div class="slds-grid slds-wrap tile-container" style="padding-top:10px">
+                <template for:each={tiles} for:item="tile">
+                    <div key={tile.title} class="custom-tile" data-title={tile.title} onclick={handleTileClick}>
+                        <div class="tile-card">
+                            <h3 class="tile-title">{tile.title}</h3>
+                            <template if:true={tile.hasFile}>
+                                <span class="slds-text-body_small slds-text-color_default">Commissions Found</span>
+                            </template>
+                            <template if:false={tile.hasFile}>
+                                <span class="slds-text-body_small slds-text-color_weak">No Commissions Found</span>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            <template if:true={showToast}>
+                <div class="custom-toast-container slds-notify slds-notify_toast slds-theme_{variant}" role="status">
+                    <lightning-icon icon-name="utility:info" alternative-text="Approved" title="Approved"
+                        style="--lwc-colorTextIconDefault: white !important;"></lightning-icon>
+                    <span class="toast-message" style="font-size: 14px;color: white;">{toastMessage}</span>
+                </div>
+            </template>
+        </div>
+    </template>
+</template>
