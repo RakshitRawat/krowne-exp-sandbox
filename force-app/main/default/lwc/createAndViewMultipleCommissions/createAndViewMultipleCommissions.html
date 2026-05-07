@@ -1,0 +1,113 @@
+<template>
+    <!-- Custom "Card" using div instead of lightning-card -->
+    <div class="slds-card slds-m-around_medium custom-card">
+        <!-- Card Header -->
+        <header class="slds-card__header slds-grid">
+            <div class="slds-media slds-media_center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <lightning-icon icon-name="custom:custom63" size="small"></lightning-icon>
+                </div>
+                <div class="slds-media__body">
+                    <h2 class="slds-card__header-title">
+                        <span>Commission Lines</span>
+                    </h2>
+                </div>
+            </div>
+        </header>
+
+        <!-- Card Body -->
+        <div class="slds-card__body slds-card__body_inner" style="height: 25vh;">
+            <template if:true={loaded}>
+                <lightning-datatable key-field="id" data={commissionLinesResult} columns={columns} hide-checkbox-column>
+                </lightning-datatable>
+            </template>
+        </div>
+    </div>
+
+
+    <!-- Custom "Card" for Add New Commission Lines -->
+    <div class="slds-card slds-m-around_medium custom-card">
+        <!-- Card Header -->
+        <header class="slds-card__header slds-grid">
+            <div class="slds-media slds-media_center slds-has-flexi-truncate">
+                <div class="slds-media__figure">
+                    <lightning-icon icon-name="custom:custom14" size="small"></lightning-icon>
+                </div>
+                <div class="slds-media__body">
+                    <h2 class="slds-card__header-title">
+                        <span>Add New Commission Lines</span>
+                    </h2>
+                </div>
+            </div>
+        </header>
+
+        <!-- Card Body -->
+        <div class="slds-card__body slds-card__body_inner">
+            <template for:each={commissionLineInputs} for:item="item" for:index="index">
+                <div key={item.key}
+                    class="slds-box slds-m-bottom_small slds-grid slds-gutters slds-align_absolute-center"
+                    style="align-items: center;">
+
+                    <!-- Rep Group Code -->
+                    <div class="slds-col slds-size_2-of-5">
+                        <lightning-combobox name="repGroupCode" label="Rep Group Code" data-index={index}
+                            value={item.repGroupCode} options={repGroupOptions} onchange={handleInputChange} required>
+                        </lightning-combobox>
+                        <template if:true={item.fileName}>
+                            <div class="slds-m-top_xx-small slds-text-body_small" style="height: 15px;"></div>
+                        </template>
+                    </div>
+
+                    <!-- File Upload -->
+                    <div class="slds-col slds-size_2-of-5"
+                        style="display: flex; flex-direction: column; justify-content: center;">
+                        <input type="file" multiple onchange={handleFileChange} class="slds-assistive-text"
+                            id={index} aria-describedby="numOfFiles" data-index={index} accept=".xls,.csv,.xlsx" />
+
+                        <lightning-button variant="brand" label="Choose Files To Upload" title="Choose Files To Upload"
+                            icon-name="utility:upload" onclick={openFileDialog} class="slds-m-top_small" data-index={index}>
+                        </lightning-button>
+
+                        <span if:true={item.fileName}>{item.fileName}</span>
+
+                        <template if:true={item.fileError}>
+                            <div class="slds-text-color_error slds-m-top_xx-small">{item.fileError}</div>
+                        </template>
+                    </div>
+
+                    <!-- Remove Row -->
+                    <div class="slds-col slds-size_1-of-10 slds-text-align_right slds-p-top_small">
+                        <lightning-button-icon icon-name="utility:close" alternative-text="Remove row" variant="bare"
+                            size="small" data-index={index} onclick={removeRow} class="custom-button">
+                        </lightning-button-icon>
+                        <template if:true={item.fileName}>
+                            <div class="slds-m-top_xx-small slds-text-body_small" style="height: 15px;"></div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Actions -->
+        </div>
+        <div class="slds-m-top_medium">
+                <lightning-button label="Add Row" variant="neutral" icon-name="utility:add" onclick={addRow}>
+                </lightning-button>
+
+                <lightning-button class="slds-m-left_small" label="Save All" variant="brand"
+                    onclick={saveCommissionLines}>
+                </lightning-button>
+            </div>
+    </div>
+
+
+</template>
+<!-- <lightning-file-upload class="file-upload-small" label="Upload File" name="fileUploader"
+                            accept={acceptedFormats} record-id={parentRecordId} data-index={index}
+                            onuploadfinished={handleFileUpload}>
+                        </lightning-file-upload>
+                        <template if:true={item.fileName}>
+                            <div class="slds-m-top_xx-small slds-text-body_small">
+                                Uploaded: {item.fileName}
+                            </div>
+                        </template> -->
+<!-- <input type="file" data-index={index} accept={acceptedFormats} onchange={handleFileChange} /> -->

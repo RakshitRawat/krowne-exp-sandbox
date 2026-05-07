@@ -1,0 +1,14 @@
+.custom-button{
+    --slds-c-button-spacing-blockstart: 10px;
+    --slds-c-button-spacing-inlineend: 10px;
+    --slds-c-button-spacing-blockend: 10px;
+    --slds-c-button-spacing-inlinestart: 10px;
+    --slds-c-button-color-border: gray;
+    --slds-c-button-color-border-hover: gray;
+    --slds-c-button-color-background: #F5F5F5;
+}
+.custom-card{
+    padding: 10px !important;
+    box-shadow: 0px 0px 5px 0px lightgray !important;
+    border-radius: 10px;
+}

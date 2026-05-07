@@ -5,8 +5,16 @@
 	
 
 <types>
-	<members>Wallet_Notes__c</members>
-	<name>CustomObject</name>
+	<members>OrderAndInvoiceListViewController</members>
+	<members>OrderAndInvoiceListViewControllerTest</members>
+	<members>ProjectController</members>
+	<members>ProjectControllerTest</members>
+	<name>ApexClass</name>
+</types>
+
+<types>
+	<members>orderAndInvoiceListViewPagination</members>
+	<name>LightningComponentBundle</name>
 </types>
 
 

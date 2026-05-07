@@ -254,7 +254,7 @@ export default class OrderAndListView extends NavigationMixin(LightningElement) 
         { label: 'Open Orders', value: 'Open Orders' },
         { label: 'Shipped Orders', value: 'Shipped Orders' },
         { label: 'Open and Shipped Orders ', value: 'Open and Shipped Orders ' },
-        { label: 'No Ship Date Orders', value: 'No Ship Date Orders' }
+        { label: 'Pending Ship Date Orders', value: 'No Ship Date Orders' }
     ];
 
     get selectViewForImage() {
